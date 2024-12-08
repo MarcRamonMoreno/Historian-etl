@@ -1,0 +1,13 @@
+
+
+services:
+  historian_transfer:
+    build: .
+    network_mode: "host"  # Use host networking
+    volumes:
+      - ./logs:/app/logs
+      - ./historian_exports:/home/mpp/historian_export/historian_exports
+    environment:
+      - TZ=Europe/Madrid
+      - ACCEPT_EULA=Y
+    restart: unless-stopped
