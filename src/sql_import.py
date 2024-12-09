@@ -25,10 +25,10 @@ class SQLImporter:
         self.logger = setup_logging()
         self.conn_str = (
             "DRIVER={ODBC Driver 18 for SQL Server};"
-            "SERVER=100.97.52.112;"
-            "DATABASE=HistorianData;"
-            "UID=mpp;"
-            "PWD=MPP_DataBase_2024##;"
+            "SERVER=your_hostname;"
+            "DATABASE=your_database;"
+            "UID=your_username;"
+            "PWD=your_PASSWORD;"
             "TrustServerCertificate=yes"
         )
         self.csv_dir = "/home/mpp/historian_export/historian_exports"
