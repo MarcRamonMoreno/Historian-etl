@@ -42,13 +42,23 @@ graph TD
    cd historian-transfer-system
    ```
 
-2. **Configure Environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configurations:
-   # - Database credentials
-   # - SFTP connection details
-   # - Scheduling preferences
+2. **Configure Credentials**
+   Edit the following files with your configurations:
+   ```python
+   # In sftp_script.py:
+   self.hostname = "your_hostname"
+   self.username = "your_username"
+   self.password = "your_PASSWORD"
+
+   # In sql_import.py:
+   self.conn_str = (
+       "DRIVER={ODBC Driver 18 for SQL Server};"
+       "SERVER=your_hostname;"
+       "DATABASE=your_database;"
+       "UID=your_username;"
+       "PWD=your_PASSWORD;"
+       "TrustServerCertificate=yes"
+   )
    ```
 
 3. **Create Required Directories**
@@ -93,22 +103,39 @@ graph TD
 
 ## ⚙️ Configuration
 
-### Environment Variables (.env)
-```ini
-# Database Configuration
-DB_HOST=localhost
-DB_NAME=HistorianData
-DB_USER=historian_user
-DB_PASSWORD=YourStrongPassword
+### Credentials Configuration
+Credentials and connection details are configured directly in the Python scripts:
 
-# SFTP Configuration
-SFTP_HOST=historian.example.com
-SFTP_USER=historian_sftp
-SFTP_PASSWORD=YourSFTPPassword
+#### SFTP Configuration (sftp_script.py)
+```python
+class HistorianTransfer:
+    def __init__(self):
+        self.hostname = "your_hostname"
+        self.username = "your_username"
+        self.password = "your_PASSWORD"
+        self.remote_path = r"C:\Users\Administrador\Desktop\PROCESS_SERVER_BACKUP_SCRIPT\historian_exports"
+        self.local_path = "/home/mpp/historian_export/historian_exports"
+```
 
-# Schedule Configuration
-TRANSFER_TIME=02:00
-RETRY_ATTEMPTS=3
+#### Database Configuration (sql_import.py)
+```python
+class SQLImporter:
+    def __init__(self):
+        self.conn_str = (
+            "DRIVER={ODBC Driver 18 for SQL Server};"
+            "SERVER=your_hostname;"
+            "DATABASE=your_database;"
+            "UID=your_username;"
+            "PWD=your_PASSWORD;"
+            "TrustServerCertificate=yes"
+        )
+```
+
+### Schedule Configuration (scheduler.py)
+The system is configured to run daily at 02:00 AM. This can be modified in the scheduler.py file:
+```python
+# Schedule the job to run at 02:00
+schedule.every().day.at("02:00").do(run_scripts, logger)
 ```
 
 ### Docker Configuration (docker-compose.yml)
