@@ -1,182 +1,201 @@
 # Historian Data Transfer System
 
-An automated ETL pipeline for transferring and processing industrial historian data. This system securely transfers time-series data from a Windows-based historian server to a SQL Server database, featuring automated scheduling, data validation, and robust error handling.
+A robust ETL (Extract, Transform, Load) pipeline designed for industrial time-series data transfer. This system automates the secure transfer of historian data from Windows servers to SQL Server databases, featuring comprehensive error handling, data validation, and efficient batch processing.
 
-## Features
+## 🌟 Key Features
 
-- Automated SFTP file transfer from Windows historian server
-- Efficient SQL Server batch importing
-- Intelligent data merging with duplicate prevention
-- Daily scheduled execution with error recovery
-- Comprehensive logging system
-- Docker containerization
+- Automated SFTP data transfer from Windows historian servers
+- High-performance SQL Server batch importing with ODBC Driver 18
+- Smart data merging with duplicate prevention and retention policies
+- Configurable daily scheduling with error recovery
+- Comprehensive rotating logs system
+- Docker containerization for easy deployment
+- Data validation and quality checks
+- File locking mechanism to prevent concurrent access
 
-## System Architecture
+## 🏗 System Architecture
 
+```mermaid
+graph TD
+    A[Windows Historian Server] -->|SFTP Transfer| B[Transfer Script]
+    B -->|CSV Files| C[Local Storage]
+    C -->|Batch Processing| D[SQL Import Script]
+    D -->|ODBC Connection| E[SQL Server Database]
+    F[Scheduler] -->|Controls| B
+    F -->|Controls| D
 ```
-Windows Historian Server
-        ↓ SFTP
-   Transfer Script
-        ↓
-   Local Storage
-        ↓
-   SQL Import Script
-        ↓
-   SQL Server Database
-```
 
-## Prerequisites
+## 📋 Prerequisites
 
 - Docker and Docker Compose
-- SQL Server with ODBC Driver 18
-- Python 3.x (for development)
 - Network access to historian server
-- Sufficient storage for data files
+- SQL Server with ODBC Driver 18
+- Minimum 4GB RAM recommended
+- Storage space for data files (dependent on retention policy)
+- Python 3.10+ (for development only)
 
-## Installation
+## 🚀 Quick Start
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/historian-transfer-system.git
-cd historian-transfer-system
-```
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/yourusername/historian-transfer-system.git
+   cd historian-transfer-system
+   ```
 
-2. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configurations
-```
+2. **Configure Environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configurations:
+   # - Database credentials
+   # - SFTP connection details
+   # - Scheduling preferences
+   ```
 
-3. Create necessary directories:
-```bash
-mkdir -p logs historian_exports/temp
-```
+3. **Create Required Directories**
+   ```bash
+   mkdir -p logs historian_exports/temp
+   chmod 755 logs historian_exports
+   ```
 
-4. Initialize the SQL Server database:
-```sql
--- Run the following SQL script
-```
+4. **Initialize Database**
+   ```bash
+   # Connect to your SQL Server instance and run db_setup.sql
+   sqlcmd -S localhost -U SA -i db_setup.sql
+   ```
 
-5. Start the system:
-```bash
-docker-compose up -d
-```
+5. **Launch the System**
+   ```bash
+   docker-compose up -d
+   ```
 
-:connect localhost -U SA -P YourPassword -C TrustServerCertificate=yes
+## 🔧 Core Components
 
-CREATE DATABASE HistorianData;
-GO
+### SFTP Transfer Module (sftp_script.py)
+- Secure file transfer using paramiko
+- File locking mechanism prevents concurrent transfers
+- Intelligent file merging with duplicate detection
+- Configurable data retention (default: 90 days)
+- Temporary storage handling for atomic operations
 
-USE HistorianData;
-GO
-
--- Create tables for historian data
-CREATE TABLE TagData (
-    ID BIGINT IDENTITY(1,1) PRIMARY KEY,
-    TagName NVARCHAR(255),
-    Timestamp DATETIME2,
-    Value FLOAT,
-    ImportDate DATETIME2 DEFAULT GETDATE()
-);
-GO
-
--- Create index for better query performance
-CREATE INDEX IX_TagData_TagName_Timestamp ON TagData(TagName, Timestamp);
-GO
-
--- Create user and grant permissions
-CREATE LOGIN historian_user WITH PASSWORD = 'StrongPassword123!';
-GO
-
-CREATE USER historian_user FOR LOGIN historian_user;
-GO
-
-ALTER ROLE db_owner ADD MEMBER historian_user;
-GO
-```
-
-## Components
-
-### SFTP Transfer Script (sftp_script.py)
-- Securely transfers files from Windows historian server
-- Implements file locking mechanism
-- Handles data merging and deduplication
-- Maintains data retention policy
-
-### SQL Import Script (sql_import.py)
-- Efficient batch importing to SQL Server
-- Handles large datasets with memory management
-- Implements retry logic and error handling
-- Prevents duplicate imports
+### SQL Import Module (sql_import.py)
+- Efficient batch importing with configurable batch sizes
+- Memory-optimized large dataset handling
+- Automatic retry logic for failed operations
+- Duplicate record prevention
+- Data type validation and conversion
 
 ### Scheduler (scheduler.py)
-- Manages daily execution of transfer and import scripts
-- Implements logging and monitoring
-- Handles execution errors and retries
-- Configurable schedule times
+- Configurable execution times
+- Automatic retry on failure
+- Comprehensive logging
+- Process monitoring
+- Health checks
 
-## Configuration
+## ⚙️ Configuration
 
-Key configuration files:
-- `.env`: Environment variables and credentials
-- `docker-compose.yml`: Container configuration
-- `requirements.txt`: Python dependencies
+### Environment Variables (.env)
+```ini
+# Database Configuration
+DB_HOST=localhost
+DB_NAME=HistorianData
+DB_USER=historian_user
+DB_PASSWORD=YourStrongPassword
 
-## Logging
+# SFTP Configuration
+SFTP_HOST=historian.example.com
+SFTP_USER=historian_sftp
+SFTP_PASSWORD=YourSFTPPassword
 
-The system maintains rotating logs for:
-- File transfers
-- SQL imports
-- Scheduler execution
-- Error tracking
-
-Logs are stored in the `logs` directory with a 5-file rotation policy.
-
-## Development
-
-For local development:
-
-1. Create virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+# Schedule Configuration
+TRANSFER_TIME=02:00
+RETRY_ATTEMPTS=3
 ```
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+### Docker Configuration (docker-compose.yml)
+- Host network mode for optimal database connectivity
+- Timezone configuration
+- Volume mapping for persistent storage
+- Automatic container restart policy
 
-3. Run individual scripts:
-```bash
-python sftp_script.py
-python sql_import.py
-python scheduler.py
-```
+## 📊 Logging System
 
-## Maintenance
+Comprehensive logging with rotation policy:
+- `logs/transfer.log`: SFTP operations
+- `logs/sql_import.log`: Database operations
+- `logs/scheduler.log`: Scheduling events
+
+Log rotation settings:
+- Maximum size: 10MB per file
+- Retention: 5 backup files
+- Log level: INFO (configurable)
+
+## 🛠 Development Setup
+
+1. **Create Virtual Environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Run Tests**
+   ```bash
+   python -m pytest tests/
+   ```
+
+## 🔒 Security Features
+
+- SFTP for secure file transfer
+- File locking prevents race conditions
+- Environment variable-based credential management
+- SQL injection prevention through parameterized queries
+- Network access control via firewall rules
+- Secure ODBC connections with TLS
+
+## 🔍 Monitoring and Maintenance
 
 Regular maintenance tasks:
 - Monitor log files for errors
 - Verify data integrity
 - Check disk space usage
 - Update security credentials
+- Review database performance metrics
 
-## Security Notes
+### Performance Monitoring
+```sql
+-- Check data import status
+SELECT COUNT(*) as record_count, 
+       MAX(ImportDate) as last_import
+FROM TagData;
+```
 
-- Uses SFTP for secure file transfer
-- Implements file locking to prevent concurrent access
-- Credentials stored in environment variables
-- Network access controlled via firewall rules
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## License
+## 📝 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Troubleshooting
+
+Common issues and solutions:
+- Database connection failures: Check ODBC driver installation
+- SFTP timeouts: Verify network connectivity and firewall rules
+- Lock file issues: Remove stale lock files if process terminated abnormally
+- Memory issues: Adjust batch size in configuration
+
+## 📞 Support
+
+For issues and feature requests:
+- Open an issue in the GitHub repository
+- Contact the maintenance team
+- Check the documentation wiki
