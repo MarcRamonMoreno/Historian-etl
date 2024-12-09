@@ -57,9 +57,9 @@ def remove_lock_file():
 
 class HistorianTransfer:
     def __init__(self):
-        self.hostname = "100.114.78.86"
-        self.username = "administrador"
-        self.password = "Melissa2014"
+        self.hostname = "your_hostname"
+        self.username = "your_username"
+        self.password = "your_PASSWORD"
         self.remote_path = r"C:\Users\Administrador\Desktop\PROCESS_SERVER_BACKUP_SCRIPT\historian_exports"
         self.local_path = "/home/mpp/historian_export/historian_exports"
         self.temp_path = "/home/mpp/historian_export/temp"
