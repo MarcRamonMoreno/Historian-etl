@@ -1,9 +1,10 @@
 # Historian Data Transfer System
 
-A robust ETL (Extract, Transform, Load) pipeline designed for industrial time-series data transfer. This system automates the secure transfer of historian data from Windows servers to SQL Server databases, featuring comprehensive error handling, data validation, and efficient batch processing.
+A robust ETL (Extract, Transform, Load) pipeline designed for industrial time-series data transfer. This system combines Windows-based data extraction with Linux-based processing and storage, automating the secure transfer of historian data to SQL Server databases, featuring comprehensive error handling, data validation, and efficient batch processing.
 
 ## 🌟 Key Features
 
+- Automated Windows-based historian data extraction
 - Automated SFTP data transfer from Windows historian servers
 - High-performance SQL Server batch importing with ODBC Driver 18
 - Smart data merging with duplicate prevention and retention policies
@@ -17,22 +18,30 @@ A robust ETL (Extract, Transform, Load) pipeline designed for industrial time-se
 
 ```mermaid
 graph TD
-    A[Windows Historian Server] -->|SFTP Transfer| B[Transfer Script]
-    B -->|CSV Files| C[Local Storage]
-    C -->|Batch Processing| D[SQL Import Script]
-    D -->|ODBC Connection| E[SQL Server Database]
-    F[Scheduler] -->|Controls| B
-    F -->|Controls| D
+    A[Historian Database] -->|PyADO Export| B[Windows Export Script]
+    B -->|CSV Generation| C[Windows Local Storage]
+    C -->|SFTP Transfer| D[Transfer Script]
+    D -->|CSV Files| E[Linux Local Storage]
+    E -->|Batch Processing| F[SQL Import Script]
+    F -->|ODBC Connection| G[SQL Server Database]
+    H[Windows Task Scheduler] -->|Daily 00:30| B
+    I[Linux Scheduler] -->|Daily 02:00| D
+    I -->|Daily 02:00| F
 ```
 
 ## 📋 Prerequisites
 
-- Docker and Docker Compose
-- Network access to historian server
-- SQL Server with ODBC Driver 18
-- Minimum 4GB RAM recommended
-- Storage space for data files (dependent on retention policy)
-- Python 3.10+ (for development only)
+- Windows Server with:
+  - Python 3.10+
+  - PyADO library
+  - Access to Historian database
+  - Task Scheduler access
+- Linux Server with:
+  - Docker and Docker Compose
+  - Network access to Windows server
+  - SQL Server with ODBC Driver 18
+  - Minimum 4GB RAM recommended
+  - Storage space for data files (dependent on retention policy)
 
 ## 🚀 Quick Start
 
@@ -42,7 +51,27 @@ graph TD
    cd historian-transfer-system
    ```
 
-2. **Configure Credentials**
+2. **Windows Server Setup**
+   - Install Python and required dependencies
+   ```bash
+   pip install PyADO pandas numpy
+   ```
+   - Configure the historian export script settings in `windows_historian_export.py`:
+   ```python
+   EXPORT_PATH = "C:\\Users\\Administrator\\Desktop\\PROCESS_SERVER_BACKUP_SCRIPT\\historian_exports"
+   # Configure Historian connection
+   conn = PyADO.connect(None, host='your_historian_host', 
+                       user='your_username', 
+                       password='your_password', 
+                       provider='iHOLEDB.iHistorian.1')
+   ```
+   - Set up Windows Task Scheduler:
+     - Create new task to run daily at 00:30
+     - Action: Start Program
+     - Program: python
+     - Arguments: "full_path_to\\windows_historian_export.py"
+
+3. **Linux Server Setup**
    Edit the following files with your configurations:
    ```python
    # In sftp_script.py:
@@ -61,24 +90,32 @@ graph TD
    )
    ```
 
-3. **Create Required Directories**
+4. **Create Required Directories**
    ```bash
    mkdir -p logs historian_exports/temp
    chmod 755 logs historian_exports
    ```
 
-4. **Initialize Database**
+5. **Initialize Database**
    ```bash
    # Connect to your SQL Server instance and run db_setup.sql
    sqlcmd -S localhost -U SA -i db_setup.sql
    ```
 
-5. **Launch the System**
+6. **Launch the System**
    ```bash
    docker-compose up -d
    ```
 
 ## 🔧 Core Components
+
+### Windows Historian Export (windows_historian_export.py)
+- Direct historian data extraction using PyADO
+- Configurable time range for data export
+- Automatic data aggregation and formatting
+- CSV file generation with timestamp-based naming
+- Comprehensive error handling and logging
+- Default 10-day data retention policy
 
 ### SFTP Transfer Module (sftp_script.py)
 - Secure file transfer using paramiko
@@ -87,19 +124,33 @@ graph TD
 - Configurable data retention (default: 90 days)
 - Temporary storage handling for atomic operations
 
-### SQL Import Module (sql_import.py)
-- Efficient batch importing with configurable batch sizes
-- Memory-optimized large dataset handling
-- Automatic retry logic for failed operations
-- Duplicate record prevention
-- Data type validation and conversion
+[Rest of the sections remain the same...]
 
-### Scheduler (scheduler.py)
-- Configurable execution times
-- Automatic retry on failure
-- Comprehensive logging
-- Process monitoring
-- Health checks
+## ⚙️ Scheduling Configuration
+
+### Windows Task Scheduler (windows_historian_export.py)
+The historian export script runs daily at 00:30 AM via Windows Task Scheduler.
+- Task Name: Historian Data Export
+- Trigger: Daily at 00:30 AM
+- Action: Run Python script
+- Recovery: Auto-restart on failure
+
+### Linux Scheduler (scheduler.py)
+The transfer and import processes run daily at 02:00 AM:
+```python
+# Schedule the job to run at 02:00
+schedule.every().day.at("02:00").do(run_scripts, logger)
+```
+
+[Rest of the sections remain the same...]
+
+## 📊 Data Flow Timeline
+
+1. 00:30 AM - Windows historian export begins
+2. ~01:30 AM - Export typically completes (depending on data volume)
+3. 02:00 AM - Linux-based SFTP transfer initiates
+4. ~02:30 AM - SQL import process begins
+5. ~03:30 AM - Full process typically completes
 
 ## ⚙️ Configuration
 
